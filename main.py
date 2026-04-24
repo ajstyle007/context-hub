@@ -457,26 +457,28 @@ def get_video_id(url: str):
 #     except Exception as e:
 #         return f"ERROR: {str(e)}"
 
-
+import os
+import glob
+import random
 import yt_dlp
 import whisper
-import random
+
 
 def get_transcript_whisper(url):
     try:
-        # 1. Define the fix specifically for cloud environments like Render
+        # 1. Properly formatted proxy list
+        # Using socks5h:// ensures DNS resolution happens through the proxy
         proxies = [
-            "socks5://yxbfpfws:l620a1u85qmi@185.171.254.93:6125",
-            "socks5://yxbfpfws:l620a1u85qmi@38.170.172.128:5129",
-            "socks5 37.44.219.101 6066 yxbfpfws l620a1u85qmi",
-            "socks5 136.0.184.139 6560 yxbfpfws l620a1u85qmi",
-            "socks5 82.23.222.52 6358 yxbfpfws l620a1u85qmi",
-            "socks5 46.203.206.138 5583 yxbfpfws l620a1u85qmi",
-            "socks5 46.203.157.246 7189 yxbfpfws l620a1u85qmi",
-            "socks5 91.123.10.157 6699 yxbfpfws l620a1u85qmi",
+            "socks5h://yxbfpfws:l620a1u85qmi@185.171.254.93:6125",
+            "socks5h://yxbfpfws:l620a1u85qmi@38.170.172.128:5129",
+            "socks5h://yxbfpfws:l620a1u85qmi@37.44.219.101:6066",
+            "socks5h://yxbfpfws:l620a1u85qmi@136.0.184.139:6560",
+            "socks5h://yxbfpfws:l620a1u85qmi@82.23.222.52:6358",
+            "socks5h://yxbfpfws:l620a1u85qmi@46.203.206.138:5583",
+            "socks5h://yxbfpfws:l620a1u85qmi@46.203.157.246:7189",
+            "socks5h://yxbfpfws:l620a1u85qmi@91.123.10.157:6699"
         ]
         
-        # Pick one proxy (helps if one gets rate-limited)
         selected_proxy = random.choice(proxies)
 
         ydl_opts = {
@@ -495,45 +497,35 @@ def get_transcript_whisper(url):
 
         print(f"LOG: Attempting download using proxy: {selected_proxy}")
 
-
-        # Check if the file exists where the code expects it
+        # Check for cookies
         if os.path.exists('cookies.txt'):
-            print("LOG: cookies.txt found at:", os.path.abspath('cookies.txt'))
-            # Optional: Print first line to verify format (Don't print the whole file for security!)
-            with open('cookies.txt', 'r') as f:
-                print("LOG: Cookie file starts with:", f.readline().strip())
+            print("LOG: cookies.txt found.")
         else:
-            print("LOG: ERROR - cookies.txt NOT FOUND!")
+            print("LOG: WARNING - cookies.txt NOT FOUND!")
 
         # 2. Download audio
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
 
-        
-        # Check what was actually downloaded
-        downloaded_files = glob.glob("audio.*")
-        if downloaded_files:
-            audio_file = downloaded_files[0]
-            print(f"LOG: Successfully downloaded {audio_file}")
-            result = model.transcribe(audio_file)
-        else:
-            return "ERROR: No audio file found after download."
-
-        # 3. Load Whisper model 
-        # (Note: Loading this every time is slow; ideally move this outside the function)
-        model = whisper.load_model("base") 
-
-        # 4. Transcribe (yt-dlp might download as .m4a or .webm, so we use 'audio.*')
-        # To be safe, we'll find the actual file downloaded
-        import glob
+        # 3. Find the downloaded file
         audio_files = glob.glob("audio.*")
         if not audio_files:
-            return "ERROR: Audio file not found after download."
+            return "ERROR: No audio file found after download."
         
-        result = model.transcribe(audio_files[0])
+        audio_path = audio_files[0]
+        print(f"LOG: Successfully downloaded {audio_path}")
 
-        # Cleanup: Remove the audio file after transcription so you don't fill up Render's disk
-        os.remove(audio_files[0])
+        # 4. Load Whisper model (Load BEFORE transcribing)
+        print("LOG: Loading Whisper model...")
+        model = whisper.load_model("base") 
+
+        # 5. Transcribe
+        print("LOG: Starting transcription...")
+        result = model.transcribe(audio_path)
+
+        # 6. Cleanup
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
 
         return result["text"]
 
