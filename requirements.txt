@@ -1,0 +1,35 @@
+
+# Web Framework
+fastapi
+uvicorn
+
+# Frontend
+streamlit
+
+# AI Providers
+groq
+google-genai
+
+# Embeddings & Vector DB
+nomic
+pinecone
+
+# PDF Processing
+pymupdf
+
+# Image Processing
+Pillow
+
+# Web Scraping
+beautifulsoup4
+requests
+
+# YouTube
+youtube-transcript-api
+
+# Utilities
+python-dotenv
+python-multipart
+
+yt_dlp
+whisper
