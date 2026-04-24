@@ -17,6 +17,18 @@ from urllib.parse import urlparse, parse_qs
 from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled, NoTranscriptFound
 from groq import Groq
 
+
+base_dir = os.path.dirname(os.path.abspath(__file__))
+cookie_path = os.path.join(base_dir, 'youtube_cookies.txt')
+
+ydl_opts = {
+    'cookiefile': cookie_path,
+    'format': 'best',
+    'noplaylist': True,
+    # Add a user-agent to further blend in
+    'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+}
+
 load_dotenv()
 
 # -------- CLIENTS --------
