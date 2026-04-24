@@ -34,3 +34,4 @@ python-multipart
 
 yt_dlp
 whisper
+google.generativeai
