@@ -465,14 +465,14 @@ def get_transcript_whisper(url):
     try:
         # 1. Define the fix specifically for cloud environments like Render
         ydl_opts = {
-            'format': 'bestaudio/best',
+            'cookiefile': 'cookies.txt', # Ensure this matches your file name exactly
+            'format': 'ba/b',            # "ba/b" means "best audio" OR "best" (flexible fallback)
             'outtmpl': 'audio.%(ext)s',
             'quiet': True,
-            'cookiefile': 'cookies.txt',  # Ensure this matches your file name
-            # CRITICAL: This bypasses the bot detection by pretending to be an Android app
             'extractor_args': {
                 'youtube': {
-                    'player_client': ['android', 'web'],
+                    # Use 'ios' and 'web' as they handle cookies more reliably
+                    'player_client': ['ios', 'web'],
                 }
             },
             'http_headers': {
@@ -492,6 +492,16 @@ def get_transcript_whisper(url):
         # 2. Download audio
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
+
+        
+        # Check what was actually downloaded
+        downloaded_files = glob.glob("audio.*")
+        if downloaded_files:
+            audio_file = downloaded_files[0]
+            print(f"LOG: Successfully downloaded {audio_file}")
+            result = model.transcribe(audio_file)
+        else:
+            return "ERROR: No audio file found after download."
 
         # 3. Load Whisper model 
         # (Note: Loading this every time is slow; ideally move this outside the function)
