@@ -465,72 +465,68 @@ import whisper
 
 
 def get_transcript_whisper(url):
+    # 1. Your list of formatted proxies
+    proxies = [
+        "socks5h://yxbfpfws:l620a1u85qmi@185.171.254.93:6125",
+        "socks5h://yxbfpfws:l620a1u85qmi@38.170.172.128:5129",
+        "socks5h://yxbfpfws:l620a1u85qmi@37.44.219.101:6066",
+        "socks5h://yxbfpfws:l620a1u85qmi@136.0.184.139:6560",
+        "socks5h://yxbfpfws:l620a1u85qmi@82.23.222.52:6358",
+        "socks5h://yxbfpfws:l620a1u85qmi@46.203.206.138:5583",
+        "socks5h://yxbfpfws:l620a1u85qmi@46.203.157.246:7189",
+        "socks5h://yxbfpfws:l620a1u85qmi@91.123.10.157:6699"
+    ]
+    
+    # Shuffle them so we don't always hit the same one first
+    random.shuffle(proxies)
+    
+    download_success = False
+    audio_path = None
+
+    # 2. Iterate through proxies until success
+    for selected_proxy in proxies:
+        try:
+            print(f"LOG: Trying proxy: {selected_proxy}")
+            
+            ydl_opts = {
+                'proxy': selected_proxy,
+                'socket_timeout': 15, # Shorter timeout so we switch faster if it's dead
+                'format': 'bestaudio/best',
+                'outtmpl': 'audio.%(ext)s',
+                'quiet': True,
+                'extractor_args': {'youtube': {'player_client': ['tv']}},
+            }
+
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+            
+            # Check if file actually exists
+            audio_files = glob.glob("audio.*")
+            if audio_files:
+                audio_path = audio_files[0]
+                download_success = True
+                print(f"LOG: Success with proxy {selected_proxy}")
+                break # Exit the proxy loop
+
+        except Exception as e:
+            print(f"LOG: Proxy {selected_proxy} failed: {str(e)}")
+            continue # Try the next proxy in the list
+
+    if not download_success:
+        return "ERROR: All proxies failed to download the video."
+
+    # 3. Transcription Logic (remains the same)
     try:
-        # 1. Properly formatted proxy list
-        # Using socks5h:// ensures DNS resolution happens through the proxy
-        proxies = [
-            "socks5h://yxbfpfws:l620a1u85qmi@185.171.254.93:6125",
-            "socks5h://yxbfpfws:l620a1u85qmi@38.170.172.128:5129",
-            "socks5h://yxbfpfws:l620a1u85qmi@37.44.219.101:6066",
-            "socks5h://yxbfpfws:l620a1u85qmi@136.0.184.139:6560",
-            "socks5h://yxbfpfws:l620a1u85qmi@82.23.222.52:6358",
-            "socks5h://yxbfpfws:l620a1u85qmi@46.203.206.138:5583",
-            "socks5h://yxbfpfws:l620a1u85qmi@46.203.157.246:7189",
-            "socks5h://yxbfpfws:l620a1u85qmi@91.123.10.157:6699"
-        ]
-        
-        selected_proxy = random.choice(proxies)
-
-        ydl_opts = {
-            'proxy': selected_proxy,
-            'socket_timeout': 60,
-            'cookiefile': 'cookies.txt',
-            'format': 'bestaudio/best',
-            'outtmpl': 'audio.%(ext)s',
-            'quiet': False,
-            'extractor_args': {
-                'youtube': {
-                    'player_client': ['tv', 'web_creator'],
-                }
-            },
-        }
-
-        print(f"LOG: Attempting download using proxy: {selected_proxy}")
-
-        # Check for cookies
-        if os.path.exists('cookies.txt'):
-            print("LOG: cookies.txt found.")
-        else:
-            print("LOG: WARNING - cookies.txt NOT FOUND!")
-
-        # 2. Download audio
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
-
-        # 3. Find the downloaded file
-        audio_files = glob.glob("audio.*")
-        if not audio_files:
-            return "ERROR: No audio file found after download."
-        
-        audio_path = audio_files[0]
-        print(f"LOG: Successfully downloaded {audio_path}")
-
-        # 4. Load Whisper model (Load BEFORE transcribing)
-        print("LOG: Loading Whisper model...")
+        print("LOG: Loading Whisper and transcribing...")
         model = whisper.load_model("base") 
-
-        # 5. Transcribe
-        print("LOG: Starting transcription...")
         result = model.transcribe(audio_path)
-
-        # 6. Cleanup
+        
         if os.path.exists(audio_path):
             os.remove(audio_path)
-
+            
         return result["text"]
-
     except Exception as e:
-        return f"ERROR: {str(e)}"
+        return f"ERROR during transcription: {str(e)}"
     
 
 from pydantic import BaseModel
