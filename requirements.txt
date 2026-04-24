@@ -2,6 +2,7 @@
 # Web Framework
 fastapi
 uvicorn
+gunicorn
 
 # Frontend
 streamlit
