@@ -460,25 +460,34 @@ def get_video_id(url: str):
 
 import yt_dlp
 import whisper
+import random
 
 def get_transcript_whisper(url):
     try:
         # 1. Define the fix specifically for cloud environments like Render
+        proxies = [
+            "socks5://yxbfpfws:l620a1u85qmi@185.171.254.93:6125",
+            "socks5://yxbfpfws:l620a1u85qmi@38.170.172.128:5129"
+        ]
+        
+        # Pick one proxy (helps if one gets rate-limited)
+        selected_proxy = random.choice(proxies)
+
         ydl_opts = {
-            'cookiefile': 'cookies.txt', # Ensure this matches your file name exactly
-            'format': 'ba/b',            # "ba/b" means "best audio" OR "best" (flexible fallback)
+            'proxy': selected_proxy,
+            'cookiefile': 'cookies.txt',
+            'format': 'bestaudio/best',
             'outtmpl': 'audio.%(ext)s',
-            'quiet': True,
+            'quiet': False,
             'extractor_args': {
                 'youtube': {
-                    # Use 'ios' and 'web' as they handle cookies more reliably
-                    'player_client': ['ios', 'web'],
+                    'player_client': ['tv', 'web_creator'],
                 }
             },
-            'http_headers': {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-            }
         }
+
+        print(f"LOG: Attempting download using proxy: {selected_proxy}")
+
 
         # Check if the file exists where the code expects it
         if os.path.exists('cookies.txt'):
