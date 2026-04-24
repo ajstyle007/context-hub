@@ -464,69 +464,29 @@ import yt_dlp
 import whisper
 
 
-def get_transcript_whisper(url):
-    # 1. Your list of formatted proxies
-    proxies = [
-        "socks5h://yxbfpfws:l620a1u85qmi@185.171.254.93:6125",
-        "socks5h://yxbfpfws:l620a1u85qmi@38.170.172.128:5129",
-        "socks5h://yxbfpfws:l620a1u85qmi@37.44.219.101:6066",
-        "socks5h://yxbfpfws:l620a1u85qmi@136.0.184.139:6560",
-        "socks5h://yxbfpfws:l620a1u85qmi@82.23.222.52:6358",
-        "socks5h://yxbfpfws:l620a1u85qmi@46.203.206.138:5583",
-        "socks5h://yxbfpfws:l620a1u85qmi@46.203.157.246:7189",
-        "socks5h://yxbfpfws:l620a1u85qmi@91.123.10.157:6699"
-    ]
+from youtube_transcript_api import YouTubeTranscriptApi
+
+def get_transcript_v2(url):
+    video_id = get_video_id(url) # Your function to extract ID
     
-    # Shuffle them so we don't always hit the same one first
-    random.shuffle(proxies)
-    
-    download_success = False
-    audio_path = None
-
-    # 2. Iterate through proxies until success
-    for selected_proxy in proxies:
-        try:
-            print(f"LOG: Trying proxy: {selected_proxy}")
-            
-            ydl_opts = {
-                'proxy': selected_proxy,
-                'socket_timeout': 15, # Shorter timeout so we switch faster if it's dead
-                'format': 'bestaudio/best',
-                'outtmpl': 'audio.%(ext)s',
-                'quiet': True,
-                'extractor_args': {'youtube': {'player_client': ['tv']}},
-            }
-
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([url])
-            
-            # Check if file actually exists
-            audio_files = glob.glob("audio.*")
-            if audio_files:
-                audio_path = audio_files[0]
-                download_success = True
-                print(f"LOG: Success with proxy {selected_proxy}")
-                break # Exit the proxy loop
-
-        except Exception as e:
-            print(f"LOG: Proxy {selected_proxy} failed: {str(e)}")
-            continue # Try the next proxy in the list
-
-    if not download_success:
-        return "ERROR: All proxies failed to download the video."
-
-    # 3. Transcription Logic (remains the same)
     try:
-        print("LOG: Loading Whisper and transcribing...")
-        model = whisper.load_model("base") 
-        result = model.transcribe(audio_path)
+        # Step 1: Try to get the transcript directly (Fast & Free)
+        # You can still use your proxies here if needed
+        proxy_config = {
+            "https": "socks5h://yxbfpfws:l620a1u85qmi@185.171.254.93:6125"
+        }
         
-        if os.path.exists(audio_path):
-            os.remove(audio_path)
-            
-        return result["text"]
+        transcript_list = YouTubeTranscriptApi.get_transcript(video_id, proxies=proxy_config)
+        full_text = " ".join([t['text'] for t in transcript_list])
+        print("LOG: Successfully fetched transcript via API")
+        return full_text
+
     except Exception as e:
-        return f"ERROR during transcription: {str(e)}"
+        print(f"LOG: API Method failed: {e}. Falling back to Whisper...")
+        
+        # Step 2: Only if API fails, run your yt-dlp + Whisper code
+        # This is where your current proxy loop code would go
+        
     
 
 from pydantic import BaseModel
