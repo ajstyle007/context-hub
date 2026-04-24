@@ -471,13 +471,13 @@ import whisper
 def get_transcript_whisper(url):
     try:
         # Download audio
-        # ydl_opts = {
-        #     'format': 'bestaudio/best',
-        #     'outtmpl': 'audio.%(ext)s',
-        #     'quiet': True,
-        #     'cookiefile': 'youtube_cookies.txt',
-        #     'format': 'best',
-        # }
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'outtmpl': 'audio.%(ext)s',
+            'quiet': True,
+            'cookiefile': 'youtube_cookies.txt',
+            'format': 'best',
+        }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
