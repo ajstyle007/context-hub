@@ -480,6 +480,15 @@ def get_transcript_whisper(url):
             }
         }
 
+        # Check if the file exists where the code expects it
+        if os.path.exists('youtube_cookies.txt'):
+            print("LOG: youtube_cookies.txt found at:", os.path.abspath('youtube_cookies.txt'))
+            # Optional: Print first line to verify format (Don't print the whole file for security!)
+            with open('youtube_cookies.txt', 'r') as f:
+                print("LOG: Cookie file starts with:", f.readline().strip())
+        else:
+            print("LOG: ERROR - youtube_cookies.txt NOT FOUND!")
+
         # 2. Download audio
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
