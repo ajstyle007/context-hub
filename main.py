@@ -500,7 +500,7 @@ async def process_youtube(request: YouTubeRequest):
         url = request.url
         video_id = get_video_id(url)
 
-        text = get_transcript_whisper(url)
+        text = get_transcript_v2(url)
         if text.startswith("ERROR"):
             print("TRANSCRIPT ERROR:", text)  
             return {"status": "error", "error": text}
