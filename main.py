@@ -467,7 +467,13 @@ def get_transcript_whisper(url):
         # 1. Define the fix specifically for cloud environments like Render
         proxies = [
             "socks5://yxbfpfws:l620a1u85qmi@185.171.254.93:6125",
-            "socks5://yxbfpfws:l620a1u85qmi@38.170.172.128:5129"
+            "socks5://yxbfpfws:l620a1u85qmi@38.170.172.128:5129",
+            "socks5 37.44.219.101 6066 yxbfpfws l620a1u85qmi",
+            "socks5 136.0.184.139 6560 yxbfpfws l620a1u85qmi",
+            "socks5 82.23.222.52 6358 yxbfpfws l620a1u85qmi",
+            "socks5 46.203.206.138 5583 yxbfpfws l620a1u85qmi",
+            "socks5 46.203.157.246 7189 yxbfpfws l620a1u85qmi",
+            "socks5 91.123.10.157 6699 yxbfpfws l620a1u85qmi",
         ]
         
         # Pick one proxy (helps if one gets rate-limited)
@@ -475,6 +481,7 @@ def get_transcript_whisper(url):
 
         ydl_opts = {
             'proxy': selected_proxy,
+            'socket_timeout': 60,
             'cookiefile': 'cookies.txt',
             'format': 'bestaudio/best',
             'outtmpl': 'audio.%(ext)s',
