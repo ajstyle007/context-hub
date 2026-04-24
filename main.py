@@ -21,13 +21,6 @@ from groq import Groq
 base_dir = os.path.dirname(os.path.abspath(__file__))
 cookie_path = os.path.join(base_dir, 'youtube_cookies.txt')
 
-ydl_opts = {
-    'cookiefile': cookie_path,
-    'format': 'best',
-    'noplaylist': True,
-    # Add a user-agent to further blend in
-    'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-}
 
 load_dotenv()
 
@@ -470,23 +463,42 @@ import whisper
 
 def get_transcript_whisper(url):
     try:
-        # Download audio
+        # 1. Define the fix specifically for cloud environments like Render
         ydl_opts = {
             'format': 'bestaudio/best',
             'outtmpl': 'audio.%(ext)s',
             'quiet': True,
-            'cookiefile': 'youtube_cookies.txt',
-            'format': 'best',
+            'cookiefile': 'youtube_cookies.txt',  # Ensure this matches your file name
+            # CRITICAL: This bypasses the bot detection by pretending to be an Android app
+            'extractor_args': {
+                'youtube': {
+                    'player_client': ['android', 'web'],
+                }
+            },
+            'http_headers': {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+            }
         }
 
+        # 2. Download audio
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
 
-        # Load Whisper model
-        model = whisper.load_model("base")  # use "small" or "medium" for better accuracy
+        # 3. Load Whisper model 
+        # (Note: Loading this every time is slow; ideally move this outside the function)
+        model = whisper.load_model("base") 
 
-        # Transcribe
-        result = model.transcribe("audio.webm")
+        # 4. Transcribe (yt-dlp might download as .m4a or .webm, so we use 'audio.*')
+        # To be safe, we'll find the actual file downloaded
+        import glob
+        audio_files = glob.glob("audio.*")
+        if not audio_files:
+            return "ERROR: Audio file not found after download."
+        
+        result = model.transcribe(audio_files[0])
+
+        # Cleanup: Remove the audio file after transcription so you don't fill up Render's disk
+        os.remove(audio_files[0])
 
         return result["text"]
 
